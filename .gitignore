@@ -1,0 +1,27 @@
+# Prerequisites: Always ignore the local build artifact folder
+/build/
+/.cache/
+
+# VS Code IDE Specific configurations
+/.vscode/
+*.code-workspace
+
+# C++ Compiler generated binaries, objects, and libraries
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.exe
+*.out
+
+# LLVM temporary crash logs / dump outputs
+*.ll
+*.bc
+*.s
+*.asm
+
+# Operating System background logs
+.DS_Store
+Thumbs.db
