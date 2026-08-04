@@ -18,10 +18,12 @@ namespace zomlang {
         size_t cursor;
         double numVal;
         std::string identifierStr;
+        int curTok;
         int lineNo;
         int colNo;
 
         char getNextChar();
+        int getTok();
 
         public:
         explicit Lexer(std::string_view sourceCode);

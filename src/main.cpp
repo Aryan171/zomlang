@@ -2,7 +2,7 @@
 #include <zomlang/Lexer.hpp>
 
 int main() {
-    std::string_view sourceCode = "def foo(x) x + 1";
+    std::string_view sourceCode = "def foo(x) x + 1\n1.01.5";
     zomlang::Lexer lexer(sourceCode);
 
     for (int token = lexer.getNextToken(); token != zomlang::tok_eof; token = lexer.getNextToken()) {

@@ -19,7 +19,7 @@ namespace zomlang {
         return c;
     }
 
-    int Lexer::getNextToken() {
+    int Lexer::getTok() {
         int lastChar = ' ';
         while (isspace(lastChar)) {
             lastChar = getNextChar();
@@ -96,5 +96,17 @@ namespace zomlang {
 
     double Lexer::getNumVal() const {
         return numVal;
+    }
+
+    int Lexer::getNextToken() {
+        return curTok = getTok();
+    }
+
+    int Lexer::getColNo() const {
+        return colNo;
+    }
+
+    int Lexer::getLineNo() const {
+        return lineNo;
     }
 }
