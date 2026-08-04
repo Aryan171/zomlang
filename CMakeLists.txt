@@ -1,17 +1,18 @@
 cmake_minimum_required(VERSION 3.20.0)
-project(zomlang VERSION 0.1.0 LANGUAGES C CXX)
+project(zomlang CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(zstd REQUIRED)
-
 find_package(LLVM REQUIRED CONFIG)
 
-add_definitions(${LLVM_DEFINITIONS})
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
 include_directories(${LLVM_INCLUDE_DIRS})
+separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+add_definitions(${LLVM_DEFINITIONS_LIST})
 
-add_executable(zomlang main.cpp)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-llvm_map_components_to_libnames(llvm_libs core support native)
-target_link_libraries(zomlang PRIVATE ${llvm_libs})
+add_subdirectory(src)
