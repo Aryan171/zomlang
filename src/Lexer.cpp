@@ -2,7 +2,8 @@
 #include <stdexcept>
 
 namespace zomlang {
-    Lexer::Lexer(std::string_view sourceCode) : buffer(sourceCode), cursor(0), numVal(0.0), lineNo(1), colNo(1) {}
+    Lexer::Lexer(std::string_view sourceCode) : 
+    buffer(sourceCode), cursor(0), numVal(0.0), lineNo(1), colNo(1), lastChar(' ') {}
 
     char Lexer::getNextChar() {
         if (cursor >= buffer.size()) {
@@ -20,7 +21,6 @@ namespace zomlang {
     }
 
     int Lexer::getTok() {
-        int lastChar = ' ';
         while (isspace(lastChar)) {
             lastChar = getNextChar();
         }
@@ -76,7 +76,7 @@ namespace zomlang {
             } while (lastChar != EOF && lastChar != '\n' && lastChar != '\r');
 
             if (lastChar != EOF) {
-                return getNextToken();
+                return getTok();
             }
         }
 

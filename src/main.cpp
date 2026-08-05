@@ -1,8 +1,9 @@
 #include <iostream>
 #include <zomlang/Lexer.hpp>
+#include <zomlang/Parser.hpp>
 
 int main() {
-    std::string_view sourceCode = "def foo(x) x + 1\n1.01.5";
+    std::string_view sourceCode = "def foo(x, y, z, a, b) x + 1\n11+2-7";
     zomlang::Lexer lexer(sourceCode);
 
     for (int token = lexer.getNextToken(); token != zomlang::tok_eof; token = lexer.getNextToken()) {
@@ -24,4 +25,13 @@ int main() {
                 break;
         }
     }
+
+    delete &lexer;
+
+    lexer = zomlang::Lexer(sourceCode);
+
+    zomlang::Parser parser(lexer);
+
+    parser.parse();
+
 }
