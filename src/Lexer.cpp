@@ -3,7 +3,9 @@
 
 namespace zomlang {
     Lexer::Lexer(std::string_view sourceCode) : 
-    buffer(sourceCode), cursor(0), numVal(0.0), lineNo(1), colNo(1), lastChar(' ') {}
+    buffer(sourceCode), cursor(0), numVal(0.0), lineNo(1), colNo(1), lastChar(' ') {
+        this->getNextToken(); // Initialize the first token
+    }
 
     char Lexer::getNextChar() {
         if (cursor >= buffer.size()) {
@@ -48,21 +50,17 @@ namespace zomlang {
             std::string numStr;
             bool decimalPointSeen = false;
 
-            if (lastChar == '.') {
-                decimalPointSeen = true;
-            }
-
             do {
-                numStr += lastChar;
-                lastChar = getNextChar();
-
                 if (lastChar == '.') {
                     if (decimalPointSeen) {
                         throw std::runtime_error("Error: Malformed number literal with multiple decimal points ('"
-                             + numStr + ".') at line " + std::to_string(lineNo) + ", column " + std::to_string(colNo));
+                            + numStr + "...') at line " + std::to_string(lineNo) + ", column " + std::to_string(colNo));
                     }
                     decimalPointSeen = true;
                 }
+
+                numStr += lastChar;
+                lastChar = getNextChar();
             } while (isdigit(lastChar) || lastChar == '.');
 
             numVal = strtod(numStr.c_str(), nullptr);

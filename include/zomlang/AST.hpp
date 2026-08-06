@@ -3,12 +3,16 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include "llvm/IR/Value.h"
+#include "llvm/IR/Constants.h"
+
 
 namespace zomlang {
     // ExprAST - Base class for all expression nodes.
     class ExprAST {
         public:
         virtual ~ExprAST() = default;
+        virtual llvm::Value *codegen() = 0;
     };
     
     // NumberExprAST - Expression class for numeric literals like "1.0".
@@ -17,6 +21,7 @@ namespace zomlang {
 
         public:
         NumberExprAST(double val) : val(val) {}
+        llvm::Value *codegen() override;
     };
 
     // VariableExprAST - Expression class for referencing a variable, like "a".
@@ -25,6 +30,7 @@ namespace zomlang {
 
         public:
         VariableExprAST(const std::string &name) : name(name) {}
+        llvm::Value *codegen() override;
     };
 
     // BinaryExprAST - Expression class for a binary operator.
@@ -36,6 +42,7 @@ namespace zomlang {
         BinaryExprAST(char op, std::unique_ptr<ExprAST> LHS,
                         std::unique_ptr<ExprAST> RHS)
             : op(op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+        llvm::Value *codegen() override;
     };
 
     // CallExprAST - Expression class for function calls.
@@ -47,20 +54,22 @@ namespace zomlang {
         CallExprAST(const std::string &callee,
             std::vector<std::unique_ptr<ExprAST>> args)
             : callee(callee), args(std::move(args)) {}
+        llvm::Value *codegen() override;
     };
 
     // PrototypeAST - This class represents the "prototype" for a function,
     // which captures its name, and its argument names (thus implicitly the number
     // of arguments the function takes).
     class PrototypeAST {
-        std::string Name;
-        std::vector<std::string> Args;
+        std::string name;
+        std::vector<std::string> args;
 
         public:
-        PrototypeAST(const std::string &Name, std::vector<std::string> Args)
-            : Name(Name), Args(std::move(Args)) {}
+        PrototypeAST(const std::string &name, std::vector<std::string> args)
+            : name(name), args(std::move(args)) {}
 
-        const std::string &getName() const { return Name; }
+        const std::string &getName() const { return name; }
+        llvm::Function *codegen();
     };
 
     /// FunctionAST - This class represents a function definition itself.
@@ -72,6 +81,13 @@ namespace zomlang {
         FunctionAST(std::unique_ptr<PrototypeAST> Proto,
                     std::unique_ptr<ExprAST> Body)
             : Proto(std::move(Proto)), Body(std::move(Body)) {}
+        llvm::Function *codegen();
     };
 
+    
+    std::unique_ptr<ExprAST> LogError(const char *Str);
+    
+    std::unique_ptr<PrototypeAST> LogErrorP(const char *Str);
+
+    llvm::Value *LogErrorV(const char *Str);
 }

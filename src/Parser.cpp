@@ -1,34 +1,64 @@
 #include "zomlang/Parser.hpp"
+#include "llvm/IR/Value.h"
+#include <iostream>
+
+using namespace std;
 
 namespace zomlang {
     Parser::Parser(Lexer &lexer) : lexer(lexer) {}
 
-    void Parser::parse() {
-        while (true) {
-            fprintf(stderr, "ready> ");
-            switch (lexer.curTok) {
-                case tok_eof:
+void Parser::parse() {
+    while (true) {
+        fprintf(stderr, "ready> ");
+        switch (lexer.curTok) {
+            case tok_eof:
                 return;
 
-                case ';': // ignore top-level semicolons.
+            case ';': // ignore top-level semicolons.
                 lexer.getNextToken();
                 break;
 
-                case tok_def:
-                parseDefinition();
+            case tok_def: {
+                if (auto FnAST = handleDefinition()) {
+                    if (auto *IRFunction = FnAST->codegen()) {
+                        fprintf(stderr, "Parsed a function definition:\n");
+                        IRFunction->print(llvm::outs());
+                        fprintf(stderr, "\n");
+                    }
+                } else {
+                    lexer.getNextToken(); // Skip token on error recovery
+                }
                 break;
+            }
 
-                case tok_extern:
-                parseExtern();
+            case tok_extern: {
+                if (auto ProtoAST = parseExtern()) {
+                    if (auto *IRFunction = ProtoAST->codegen()) {
+                        fprintf(stderr, "Parsed an extern:\n");
+                        IRFunction->print(llvm::outs());
+                        fprintf(stderr, "\n");
+                    }
+                } else {
+                    lexer.getNextToken();
+                }
                 break;
+            }
 
-
-                default:
-                parseTopLevelExpr();
+            default: {
+                if (auto FnAST = handleTopLevelExpr()) {
+                    if (auto *IRFunction = FnAST->codegen()) {
+                        fprintf(stderr, "Parsed a top-level expression:\n");
+                        IRFunction->print(llvm::outs());
+                        fprintf(stderr, "\n");
+                    }
+                } else {
+                    lexer.getNextToken();
+                }
                 break;
             }
         }
     }
+}
 
     int Parser::getTokPrecedence() {
         if (!isascii(lexer.curTok))
@@ -168,7 +198,7 @@ namespace zomlang {
         return std::make_unique<PrototypeAST>(fnName, std::move(argNames));
     }
 
-    std::unique_ptr<FunctionAST> Parser::parseDefinition() {
+    std::unique_ptr<FunctionAST> Parser::handleDefinition() {
         lexer.getNextToken();
         auto proto = parsePrototype();
 
@@ -188,22 +218,11 @@ namespace zomlang {
         return parsePrototype();
     }
 
-    std::unique_ptr<FunctionAST> Parser::parseTopLevelExpr() {
+    std::unique_ptr<FunctionAST> Parser::handleTopLevelExpr() {
         if (auto e = parseExpression()) {
             auto proto = std::make_unique<PrototypeAST>("__anon_expr", std::vector<std::string>());
             return std::make_unique<FunctionAST>(std::move(proto), std::move(e));
         }
         return nullptr;
     }
-    
-    std::unique_ptr<ExprAST> Parser::LogError(const char *Str) {
-        fprintf(stderr, "Error: %s\n", Str);
-        return nullptr;
-    }
-    
-    std::unique_ptr<PrototypeAST> Parser::LogErrorP(const char *Str) {
-        LogError(Str);
-        return nullptr;
-    }
-
 }

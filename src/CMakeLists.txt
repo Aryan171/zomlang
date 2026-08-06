@@ -3,7 +3,7 @@ llvm_map_components_to_libnames(llvm_libs core orcjit native)
 add_executable(zomlang
     Lexer.cpp
     Parser.cpp
-    #CodeGen.cpp
+    CodeGen.cpp
     main.cpp
 )
 

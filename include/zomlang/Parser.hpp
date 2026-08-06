@@ -17,11 +17,9 @@ namespace zomlang {
         std::unique_ptr<ExprAST> parsePrimary();
         std::unique_ptr<ExprAST> parseBinOpRHS(int exprPrec, std::unique_ptr<ExprAST> LHS);
         std::unique_ptr<PrototypeAST> parsePrototype();
-        std::unique_ptr<FunctionAST> parseDefinition();
+        std::unique_ptr<FunctionAST> handleDefinition();
         std::unique_ptr<PrototypeAST> parseExtern();
-        std::unique_ptr<FunctionAST> parseTopLevelExpr();
-        std::unique_ptr<ExprAST> LogError(const char *Str);
-        std::unique_ptr<PrototypeAST> LogErrorP(const char *Str);
+        std::unique_ptr<FunctionAST> handleTopLevelExpr();
 
 
         public:
