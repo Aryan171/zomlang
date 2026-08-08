@@ -1,29 +1,23 @@
-#include "zomlang/CodeGen.hpp"
 #include "zomlang/AST.hpp"
 #include "llvm/IR/Verifier.h"
 #include "zomlang/Parser.hpp"
+#include "zomlang/CompilerState.hpp"
 
 namespace zomlang {
-    std::unique_ptr<llvm::LLVMContext> TheContext = std::make_unique<llvm::LLVMContext>();
-    std::unique_ptr<llvm::Module> TheModule = std::make_unique<llvm::Module>("zomlang JIT", *TheContext);
-    std::unique_ptr<llvm::IRBuilder<>> Builder = std::make_unique<llvm::IRBuilder<>>(*TheContext);
-    std::map<std::string, llvm::Value *> NamedValues = {};
-
-
-    llvm::Value *NumberExprAST::codegen() {
-        return llvm::ConstantFP::get(*TheContext, llvm::APFloat(val));
+    llvm::Value *NumberExprAST::codegen(CompilerState& cs) {
+        return llvm::ConstantFP::get(cs.getContext(), llvm::APFloat(val));
     }
 
-    llvm::Value *VariableExprAST::codegen() {
-        llvm::Value *v = NamedValues[name];
+    llvm::Value *VariableExprAST::codegen(CompilerState& cs) {
+        llvm::Value *v = cs.getNamedValues()[name];
         if (!v) {
             LogErrorV("Unknown variable name");
         }
         return v;
     }
 
-    llvm::Value *BinaryExprAST::codegen() {
-        llvm::Value *l = LHS->codegen(), *r = RHS->codegen();
+    llvm::Value *BinaryExprAST::codegen(CompilerState& cs) {
+        llvm::Value *l = LHS->codegen(cs), *r = RHS->codegen(cs);
 
         if (!l || !r) {
             return nullptr;
@@ -31,23 +25,23 @@ namespace zomlang {
 
         switch (op) {
             case '+':
-                return Builder->CreateFAdd(l, r, "addtmp");
+                return cs.getBuilder().CreateFAdd(l, r, "addtmp");
             case '-':
-                return Builder->CreateFSub(l, r, "subtmp");
+                return cs.getBuilder().CreateFSub(l, r, "subtmp");
             case '*':
-                return Builder->CreateFMul(l, r, "multmp");
+                return cs.getBuilder().CreateFMul(l, r, "multmp");
             case '<':
-                l = Builder->CreateFCmpULT(l, r, "cmptmp");
+                l = cs.getBuilder().CreateFCmpULT(l, r, "cmptmp");
                 // Convert bool 0/1 to double 0.0 or 1.0
-                return Builder->CreateUIToFP(l, llvm::Type::getDoubleTy(*TheContext), "booltmp");
+                return cs.getBuilder().CreateUIToFP(l, llvm::Type::getDoubleTy(cs.getContext()), "booltmp");
             default:
                 return LogErrorV("invalid binary operator");
         }
     }
 
-    llvm::Value *CallExprAST::codegen() {
+    llvm::Value *CallExprAST::codegen(CompilerState& cs) {
          // Look up the name in the global module table.
-        llvm::Function *CalleeF = TheModule->getFunction(callee);
+        llvm::Function *CalleeF = cs.getModule().getFunction(callee);
         if (!CalleeF)
             return LogErrorV("Unknown function referenced");
 
@@ -57,22 +51,22 @@ namespace zomlang {
 
         std::vector<llvm::Value *> ArgsV;
         for (unsigned i = 0, e = args.size(); i != e; ++i) {
-            ArgsV.push_back(args[i]->codegen());
+            ArgsV.push_back(args[i]->codegen(cs));
             if (!ArgsV.back())
                 return nullptr;
         }
 
-        return Builder->CreateCall(CalleeF, ArgsV, "calltmp");
+        return cs.getBuilder().CreateCall(CalleeF, ArgsV, "calltmp");
     }
 
-    llvm::Function *PrototypeAST::codegen() {
+    llvm::Function *PrototypeAST::codegen(CompilerState& cs) {
         // Make the function type:  double(double,double) etc.
-        std::vector<llvm::Type *> Doubles(args.size(), llvm::Type::getDoubleTy(*TheContext));
+        std::vector<llvm::Type *> Doubles(args.size(), llvm::Type::getDoubleTy(cs.getContext()));
         llvm::FunctionType *FT =
-            llvm::FunctionType::get(llvm::Type::getDoubleTy(*TheContext), Doubles, false);
+            llvm::FunctionType::get(llvm::Type::getDoubleTy(cs.getContext()), Doubles, false);
 
         llvm::Function *F =
-            llvm::Function::Create(FT, llvm::Function::ExternalLinkage, name, TheModule.get());
+            llvm::Function::Create(FT, llvm::Function::ExternalLinkage, name, &cs.getModule());
 
         // Set names for all arguments.
         unsigned Idx = 0;
@@ -82,11 +76,11 @@ namespace zomlang {
         return F;
     }
 
-    llvm::Function *FunctionAST::codegen() {
-        llvm::Function *TheFunction = TheModule->getFunction(Proto->getName());
+    llvm::Function *FunctionAST::codegen(CompilerState& cs) {
+        llvm::Function *TheFunction = cs.getModule().getFunction(Proto->getName());
 
         if (!TheFunction) {
-            TheFunction = Proto->codegen();
+            TheFunction = Proto->codegen(cs);
         }
 
         if (!TheFunction) {
@@ -97,16 +91,16 @@ namespace zomlang {
             return (llvm::Function *)LogErrorV("Function cannot be redefined.");
         }
 
-        llvm::BasicBlock *BB = llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
-        Builder->SetInsertPoint(BB);
+        llvm::BasicBlock *BB = llvm::BasicBlock::Create(cs.getContext(), "entry", TheFunction);
+        cs.getBuilder().SetInsertPoint(BB);
 
-        NamedValues.clear();
+        cs.getNamedValues().clear();
         for (auto &Arg : TheFunction->args())
-            NamedValues[std::string(Arg.getName())] = &Arg;
+            cs.getNamedValues()[std::string(Arg.getName())] = &Arg;
 
-        if (llvm::Value *RetVal = Body->codegen()) {
+        if (llvm::Value *RetVal = Body->codegen(cs)) {
             // Finish off the function.
-            Builder->CreateRet(RetVal);
+            cs.getBuilder().CreateRet(RetVal);
 
             // Validate the generated code, checking for consistency.
             llvm::verifyFunction(*TheFunction);

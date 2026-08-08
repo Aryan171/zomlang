@@ -5,6 +5,7 @@ add_executable(zomlang
     Parser.cpp
     CodeGen.cpp
     main.cpp
+    CompilerState.cpp
 )
 
 target_link_libraries(zomlang PRIVATE ${llvm_libs})

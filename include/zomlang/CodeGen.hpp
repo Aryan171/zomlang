@@ -27,5 +27,5 @@ namespace zomlang {
     // table for the code). In this form of zomlang, the only things that can
     // be referenced are function parameters. As such, function parameters will be
     // in this map when generating code for their function body.
-    extern std::map<std::string, llvm::Value *> NamedValues;
+    extern 
 }

@@ -17,9 +17,6 @@ namespace zomlang {
         std::unique_ptr<ExprAST> parsePrimary();
         std::unique_ptr<ExprAST> parseBinOpRHS(int exprPrec, std::unique_ptr<ExprAST> LHS);
         std::unique_ptr<PrototypeAST> parsePrototype();
-        std::unique_ptr<FunctionAST> handleDefinition();
-        std::unique_ptr<PrototypeAST> parseExtern();
-        std::unique_ptr<FunctionAST> handleTopLevelExpr();
 
 
         public:
@@ -36,6 +33,8 @@ namespace zomlang {
             
         int getTokPrecedence();
 
-        void parse();
+        std::unique_ptr<FunctionAST> handleDefinition();
+        std::unique_ptr<PrototypeAST> handleExtern();
+        std::unique_ptr<FunctionAST> handleTopLevelExpr();
     };
 }

@@ -7,59 +7,6 @@ using namespace std;
 namespace zomlang {
     Parser::Parser(Lexer &lexer) : lexer(lexer) {}
 
-void Parser::parse() {
-    while (true) {
-        fprintf(stderr, "ready> ");
-        switch (lexer.curTok) {
-            case tok_eof:
-                return;
-
-            case ';': // ignore top-level semicolons.
-                lexer.getNextToken();
-                break;
-
-            case tok_def: {
-                if (auto FnAST = handleDefinition()) {
-                    if (auto *IRFunction = FnAST->codegen()) {
-                        fprintf(stderr, "Parsed a function definition:\n");
-                        IRFunction->print(llvm::outs());
-                        fprintf(stderr, "\n");
-                    }
-                } else {
-                    lexer.getNextToken(); // Skip token on error recovery
-                }
-                break;
-            }
-
-            case tok_extern: {
-                if (auto ProtoAST = parseExtern()) {
-                    if (auto *IRFunction = ProtoAST->codegen()) {
-                        fprintf(stderr, "Parsed an extern:\n");
-                        IRFunction->print(llvm::outs());
-                        fprintf(stderr, "\n");
-                    }
-                } else {
-                    lexer.getNextToken();
-                }
-                break;
-            }
-
-            default: {
-                if (auto FnAST = handleTopLevelExpr()) {
-                    if (auto *IRFunction = FnAST->codegen()) {
-                        fprintf(stderr, "Parsed a top-level expression:\n");
-                        IRFunction->print(llvm::outs());
-                        fprintf(stderr, "\n");
-                    }
-                } else {
-                    lexer.getNextToken();
-                }
-                break;
-            }
-        }
-    }
-}
-
     int Parser::getTokPrecedence() {
         if (!isascii(lexer.curTok))
             return -1;
@@ -213,7 +160,7 @@ void Parser::parse() {
         return nullptr;
     }
 
-    std::unique_ptr<PrototypeAST> Parser::parseExtern() {
+    std::unique_ptr<PrototypeAST> Parser::handleExtern() {
         lexer.getNextToken();
         return parsePrototype();
     }

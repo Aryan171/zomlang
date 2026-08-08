@@ -5,14 +5,14 @@
 #include <vector>
 #include "llvm/IR/Value.h"
 #include "llvm/IR/Constants.h"
-
+#include "zomlang/CompilerState.hpp"
 
 namespace zomlang {
     // ExprAST - Base class for all expression nodes.
     class ExprAST {
         public:
         virtual ~ExprAST() = default;
-        virtual llvm::Value *codegen() = 0;
+        virtual llvm::Value *codegen(CompilerState &cs) = 0;
     };
     
     // NumberExprAST - Expression class for numeric literals like "1.0".
@@ -21,7 +21,7 @@ namespace zomlang {
 
         public:
         NumberExprAST(double val) : val(val) {}
-        llvm::Value *codegen() override;
+        llvm::Value *codegen(CompilerState &cs) override;
     };
 
     // VariableExprAST - Expression class for referencing a variable, like "a".
@@ -30,7 +30,7 @@ namespace zomlang {
 
         public:
         VariableExprAST(const std::string &name) : name(name) {}
-        llvm::Value *codegen() override;
+        llvm::Value *codegen(CompilerState &cs) override;
     };
 
     // BinaryExprAST - Expression class for a binary operator.
@@ -42,7 +42,7 @@ namespace zomlang {
         BinaryExprAST(char op, std::unique_ptr<ExprAST> LHS,
                         std::unique_ptr<ExprAST> RHS)
             : op(op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
-        llvm::Value *codegen() override;
+        llvm::Value *codegen(CompilerState &cs) override;
     };
 
     // CallExprAST - Expression class for function calls.
@@ -54,7 +54,7 @@ namespace zomlang {
         CallExprAST(const std::string &callee,
             std::vector<std::unique_ptr<ExprAST>> args)
             : callee(callee), args(std::move(args)) {}
-        llvm::Value *codegen() override;
+        llvm::Value *codegen(CompilerState &cs) override;
     };
 
     // PrototypeAST - This class represents the "prototype" for a function,
@@ -69,7 +69,7 @@ namespace zomlang {
             : name(name), args(std::move(args)) {}
 
         const std::string &getName() const { return name; }
-        llvm::Function *codegen();
+        llvm::Function *codegen(CompilerState &cs);
     };
 
     /// FunctionAST - This class represents a function definition itself.
@@ -81,7 +81,7 @@ namespace zomlang {
         FunctionAST(std::unique_ptr<PrototypeAST> Proto,
                     std::unique_ptr<ExprAST> Body)
             : Proto(std::move(Proto)), Body(std::move(Body)) {}
-        llvm::Function *codegen();
+        llvm::Function *codegen(CompilerState &cs);
     };
 
     
