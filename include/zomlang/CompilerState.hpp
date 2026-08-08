@@ -41,6 +41,13 @@ namespace zomlang {
         llvm::Module& getModule() { return *TheModule; }
         std::map<std::string, llvm::Value *>& getNamedValues() { return NamedValues; }
         ZomlangJIT& getJIT() { return *TheJIT; }
-    };
 
+        llvm::FunctionPassManager& getFPM() { return *TheFPM; }
+        llvm::LoopAnalysisManager& getLAM() { return *TheLAM; }
+        llvm::FunctionAnalysisManager& getFAM() { return *TheFAM; }
+        llvm::CGSCCAnalysisManager& getCGAM() { return *TheCGAM; }
+        llvm::ModuleAnalysisManager& getMAM() { return *TheMAM; }
+        llvm::PassInstrumentationCallbacks& getPIC() { return *ThePIC; }
+        llvm::StandardInstrumentations& getSI() { return *TheSI; }
+    };
 }

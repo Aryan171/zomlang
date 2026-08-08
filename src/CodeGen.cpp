@@ -105,6 +105,9 @@ namespace zomlang {
             // Validate the generated code, checking for consistency.
             llvm::verifyFunction(*TheFunction);
 
+            // optimize function
+            cs.getFPM().run(*TheFunction, cs.getFAM());
+
             return TheFunction;
         }
 
