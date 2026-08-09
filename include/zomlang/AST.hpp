@@ -5,9 +5,10 @@
 #include <vector>
 #include "llvm/IR/Value.h"
 #include "llvm/IR/Constants.h"
-#include "zomlang/CompilerState.hpp"
 
 namespace zomlang {
+    class CompilerState;
+
     // ExprAST - Base class for all expression nodes.
     class ExprAST {
         public:

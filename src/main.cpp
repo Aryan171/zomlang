@@ -15,23 +15,37 @@
 
 namespace zomlang {
     std::unique_ptr<FunctionAST> handleDefinition(Lexer& lexer, Parser& parser, CompilerState& cs) {
-        lexer.getNextToken();
-        auto proto = parser.parsePrototype();
-
-        if (!proto) {
-            return nullptr;
+        if (auto FnAST = parser.parseDefinition()) {
+            if (auto *FnIR = FnAST->codegen(cs)) {
+                fprintf(stderr, "Read function definition:");
+                FnIR->print(llvm::errs());
+                fprintf(stderr, "\n");
+                llvm::cantFail(cs.getJIT().addModule(
+                    llvm::orc::ThreadSafeModule(std::move(cs.takeModule()), std::move(cs.takeContext()))));
+                cs.InitializeModuleAndManagers();
+            }
+        } 
+        else {
+            lexer.getNextToken();
         }
-
-        if (auto e = parser.parseExpression()) {
-            return std::make_unique<FunctionAST>(std::move(proto), std::move(e));
-        }
-
+        
         return nullptr;
     }
 
     std::unique_ptr<PrototypeAST> handleExtern(Lexer& lexer, Parser& parser, CompilerState& cs) {
-        lexer.getNextToken();
-        return parser.parsePrototype();
+        if (auto ProtoAST = parser.parseExtern()) {
+            if (auto *FnIR = ProtoAST->codegen(cs)) {
+                fprintf(stderr, "Read extern: ");
+                FnIR->print(llvm::errs());
+                fprintf(stderr, "\n");
+                cs.getFunctionProtos()[ProtoAST->getName()] = std::move(ProtoAST);
+            }
+        }
+        else {
+            lexer.getNextToken();
+        }
+
+        return nullptr;
     }
 
     std::unique_ptr<FunctionAST> handleTopLevelExpr(Lexer& lexer, Parser& parser, CompilerState& cs) {

@@ -60,4 +60,17 @@ namespace zomlang {
         PB.registerFunctionAnalyses(*TheFAM);
         PB.crossRegisterProxies(*TheLAM, *TheFAM, *TheCGAM, *TheMAM);
     }
+
+    llvm::Function *CompilerState::getFunction(std::string name) {
+        if (auto *F = TheModule->getFunction(name)) {
+            return F;
+        }
+
+        auto FI = FunctionProtos.find(name);
+        if (FI != FunctionProtos.end()) {
+            return FI->second->codegen(*this);
+        }
+
+        return nullptr;
+    }
 }

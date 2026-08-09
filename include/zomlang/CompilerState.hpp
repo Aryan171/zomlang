@@ -7,7 +7,9 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
+#include "llvm/IR/Function.h"
 #include "zomlang/ZomlangJIT.hpp"
+#include "zomlang/AST.hpp"
 #include <map>
 #include <memory>
 
@@ -20,6 +22,7 @@ namespace zomlang {
         std::unique_ptr<llvm::IRBuilder<>> Builder;
         std::map<std::string, llvm::Value *> NamedValues;
         std::unique_ptr<ZomlangJIT> TheJIT;
+        std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
         
         std::unique_ptr<llvm::FunctionPassManager> TheFPM;
         std::unique_ptr<llvm::LoopAnalysisManager> TheLAM;
@@ -41,6 +44,8 @@ namespace zomlang {
         llvm::Module& getModule() { return *TheModule; }
         std::map<std::string, llvm::Value *>& getNamedValues() { return NamedValues; }
         ZomlangJIT& getJIT() { return *TheJIT; }
+        std::map<std::string, std::unique_ptr<PrototypeAST>> &getFunctionProtos() { return FunctionProtos; }
+        llvm::Function *getFunction(std::string name);
 
         llvm::FunctionPassManager& getFPM() { return *TheFPM; }
         llvm::LoopAnalysisManager& getLAM() { return *TheLAM; }

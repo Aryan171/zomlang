@@ -41,7 +41,7 @@ namespace zomlang {
 
     llvm::Value *CallExprAST::codegen(CompilerState& cs) {
          // Look up the name in the global module table.
-        llvm::Function *CalleeF = cs.getModule().getFunction(callee);
+        llvm::Function *CalleeF = cs.getFunction(callee);
         if (!CalleeF)
             return LogErrorV("Unknown function referenced");
 
@@ -77,11 +77,10 @@ namespace zomlang {
     }
 
     llvm::Function *FunctionAST::codegen(CompilerState& cs) {
-        llvm::Function *TheFunction = cs.getModule().getFunction(Proto->getName());
+        auto &P = *Proto;
 
-        if (!TheFunction) {
-            TheFunction = Proto->codegen(cs);
-        }
+        cs.getFunctionProtos()[Proto->getName()] = std::move(Proto);
+        llvm::Function *TheFunction = cs.getFunction(P.getName());
 
         if (!TheFunction) {
             return nullptr;

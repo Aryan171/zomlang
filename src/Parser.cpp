@@ -152,4 +152,24 @@ namespace zomlang {
         }
         return nullptr;
     }
+
+    std::unique_ptr<PrototypeAST> Parser::parseExtern() {
+        lexer.getNextToken();
+        return parsePrototype();
+    }
+
+    std::unique_ptr<FunctionAST> Parser::parseDefinition() {
+        lexer.getNextToken();
+        auto proto = parsePrototype();
+
+        if (!proto) {
+            return nullptr;
+        }
+
+        if (auto e = parseExpression()) {
+            return std::make_unique<FunctionAST>(std::move(proto), std::move(e));
+        }
+
+        return nullptr;
+    }
 }
