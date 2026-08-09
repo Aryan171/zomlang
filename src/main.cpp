@@ -8,10 +8,53 @@
 #include "zomlang/CompilerState.hpp"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Error.h"
+#include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
+#include <utility>
 #include <cstdio>
 
 namespace zomlang {
-    void RunREPL(CompilerState& state, Parser& parser, Lexer& lexer) {
+    std::unique_ptr<FunctionAST> handleDefinition(Lexer& lexer, Parser& parser, CompilerState& cs) {
+        lexer.getNextToken();
+        auto proto = parser.parsePrototype();
+
+        if (!proto) {
+            return nullptr;
+        }
+
+        if (auto e = parser.parseExpression()) {
+            return std::make_unique<FunctionAST>(std::move(proto), std::move(e));
+        }
+
+        return nullptr;
+    }
+
+    std::unique_ptr<PrototypeAST> handleExtern(Lexer& lexer, Parser& parser, CompilerState& cs) {
+        lexer.getNextToken();
+        return parser.parsePrototype();
+    }
+
+    std::unique_ptr<FunctionAST> handleTopLevelExpr(Lexer& lexer, Parser& parser, CompilerState& cs) {
+        if (auto FnAST = parser.parseTopLevelExpr()) {
+            if (FnAST->codegen(cs)) {
+                auto RT = cs.getJIT().getMainJITDylib().createResourceTracker();
+                auto TSM = llvm::orc::ThreadSafeModule(std::move(cs.takeModule()), std::move(cs.takeContext()));
+                
+                llvm::cantFail(cs.getJIT().addModule(std::move(TSM), RT));
+                cs.InitializeModuleAndManagers();
+
+                auto ExprSymbol = llvm::cantFail(cs.getJIT().lookup("__anon_expr"));
+
+                double (*FP)() = ExprSymbol.toPtr<double(*)()>();
+                fprintf(stderr, "Evaluated to %f\n", FP());
+
+                llvm::cantFail(RT->remove());
+            }
+        }
+        return nullptr;
+    }
+
+    void RunREPL(Lexer& lexer, Parser& parser, CompilerState& cs) {
         while (true) {
             fprintf(stderr, "ready> ");
             switch (lexer.curTok) {
@@ -23,9 +66,9 @@ namespace zomlang {
                     break;
 
                 case tok_def: {
-                    if (auto FnAST = parser.handleDefinition()) {
+                    if (auto FnAST = handleDefinition(lexer, parser, cs)) {
                         // Pass the CompilerState to codegen
-                        if (auto *IRFunction = FnAST->codegen(state)) {
+                        if (auto *IRFunction = FnAST->codegen(cs)) {
                             fprintf(stderr, "Parsed a function definition:\n");
                             IRFunction->print(llvm::errs());
                             fprintf(stderr, "\n");
@@ -37,8 +80,8 @@ namespace zomlang {
                 }
 
                 case tok_extern: {
-                    if (auto ProtoAST = parser.handleExtern()) {
-                        if (auto *IRFunction = ProtoAST->codegen(state)) {
+                    if (auto ProtoAST = handleExtern(lexer, parser, cs)) {
+                        if (auto *IRFunction = ProtoAST->codegen(cs)) {
                             fprintf(stderr, "Parsed an extern:\n");
                             IRFunction->print(llvm::errs());
                             fprintf(stderr, "\n");
@@ -50,8 +93,8 @@ namespace zomlang {
                 }
 
                 default: {
-                    if (auto FnAST = parser.handleTopLevelExpr()) {
-                        if (auto *IRFunction = FnAST->codegen(state)) {
+                    if (auto FnAST = handleTopLevelExpr(lexer, parser, cs)) {
+                        if (auto *IRFunction = FnAST->codegen(cs)) {
                             fprintf(stderr, "Parsed a top-level expression:\n");
                             IRFunction->print(llvm::errs());
                             fprintf(stderr, "\n");
@@ -80,7 +123,7 @@ int main() {
     std::string_view sourceCode(source);
     zomlang::Lexer lexer(sourceCode);
     zomlang::Parser parser(lexer);
-    zomlang::CompilerState state;
+    zomlang::CompilerState cs;
 
-    zomlang::RunREPL(state,parser, lexer);
+    zomlang::RunREPL(lexer, parser, cs);
 }

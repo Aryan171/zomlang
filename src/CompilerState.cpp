@@ -54,7 +54,7 @@ namespace zomlang {
         // Simplify the control flow graph (deleting unreachable blocks, etc).
         TheFPM->addPass(llvm::SimplifyCFGPass());
 
-          // Register analysis passes used in these transform passes.
+        // Register analysis passes used in these transform passes.
         llvm::PassBuilder PB;
         PB.registerModuleAnalyses(*TheMAM);
         PB.registerFunctionAnalyses(*TheFAM);

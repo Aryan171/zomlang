@@ -49,5 +49,8 @@ namespace zomlang {
         llvm::ModuleAnalysisManager& getMAM() { return *TheMAM; }
         llvm::PassInstrumentationCallbacks& getPIC() { return *ThePIC; }
         llvm::StandardInstrumentations& getSI() { return *TheSI; }
+
+        std::unique_ptr<llvm::Module> takeModule() { return std::move(TheModule); }
+        std::unique_ptr<llvm::LLVMContext> takeContext() { return std::move(TheContext); }
     };
 }

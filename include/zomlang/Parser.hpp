@@ -10,6 +10,9 @@ namespace zomlang {
         private:
         Lexer &lexer;
 
+        public:
+        explicit Parser(Lexer &lexer);
+        
         std::unique_ptr<ExprAST> parseExpression();
         std::unique_ptr<ExprAST> parseNumberExpr();
         std::unique_ptr<ExprAST> parseIdentifierExpr();
@@ -17,10 +20,7 @@ namespace zomlang {
         std::unique_ptr<ExprAST> parsePrimary();
         std::unique_ptr<ExprAST> parseBinOpRHS(int exprPrec, std::unique_ptr<ExprAST> LHS);
         std::unique_ptr<PrototypeAST> parsePrototype();
-
-
-        public:
-        explicit Parser(Lexer &lexer);
+        std::unique_ptr<FunctionAST> parseTopLevelExpr();
 
         std::string_view sourceCode;
 
@@ -32,9 +32,5 @@ namespace zomlang {
         };
             
         int getTokPrecedence();
-
-        std::unique_ptr<FunctionAST> handleDefinition();
-        std::unique_ptr<PrototypeAST> handleExtern();
-        std::unique_ptr<FunctionAST> handleTopLevelExpr();
     };
 }

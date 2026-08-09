@@ -145,30 +145,10 @@ namespace zomlang {
         return std::make_unique<PrototypeAST>(fnName, std::move(argNames));
     }
 
-    std::unique_ptr<FunctionAST> Parser::handleDefinition() {
-        lexer.getNextToken();
-        auto proto = parsePrototype();
-
-        if (!proto) {
-            return nullptr;
-        }
-
-        if (auto e = parseExpression()) {
-            return std::make_unique<FunctionAST>(std::move(proto), std::move(e));
-        }
-
-        return nullptr;
-    }
-
-    std::unique_ptr<PrototypeAST> Parser::handleExtern() {
-        lexer.getNextToken();
-        return parsePrototype();
-    }
-
-    std::unique_ptr<FunctionAST> Parser::handleTopLevelExpr() {
-        if (auto e = parseExpression()) {
-            auto proto = std::make_unique<PrototypeAST>("__anon_expr", std::vector<std::string>());
-            return std::make_unique<FunctionAST>(std::move(proto), std::move(e));
+    std::unique_ptr<FunctionAST> Parser::parseTopLevelExpr() {
+        if (auto E = parseExpression()) {
+            auto Proto = std::make_unique<PrototypeAST>("__anon_expr", std::vector<std::string>());
+            return std::make_unique<FunctionAST>(std::move(Proto), std::move(E));
         }
         return nullptr;
     }

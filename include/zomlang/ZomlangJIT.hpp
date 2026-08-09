@@ -27,14 +27,19 @@ namespace zomlang {
             return JIT->getDataLayout();
         }
         
-        llvm::Error addModule(std::unique_ptr<llvm::Module> M, std::unique_ptr<llvm::LLVMContext> C) {
-            return JIT->addIRModule(
-                llvm::orc::ThreadSafeModule(std::move(M), std::move(C))
-            );
+        llvm::Error addModule(llvm::orc::ThreadSafeModule TSM, llvm::orc::ResourceTrackerSP RT = nullptr) {
+            if (RT) {
+                return JIT->addIRModule(RT, std::move(TSM));
+            }
+            return JIT->addIRModule(std::move(TSM));
         }
         
         llvm::Expected<llvm::orc::ExecutorAddr> lookup(llvm::StringRef Name) {
             return JIT->lookup(Name);
+        }
+        
+        llvm::orc::JITDylib& getMainJITDylib() { 
+            return JIT->getMainJITDylib();
         }
     };
 }
