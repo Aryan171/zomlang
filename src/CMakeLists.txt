@@ -6,6 +6,11 @@ add_executable(zomlang
     CodeGen.cpp
     main.cpp
     CompilerState.cpp
+    Functions.cpp
 )
 
 target_link_libraries(zomlang PRIVATE ${llvm_libs})
+
+target_link_options(zomlang PRIVATE
+    -rdynamic
+)

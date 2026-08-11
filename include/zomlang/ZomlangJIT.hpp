@@ -20,7 +20,19 @@ namespace zomlang {
                 return JITOrErr.takeError();
             }
 
-            return std::make_unique<ZomlangJIT>(std::move(*JITOrErr));
+            auto JIT = std::move(*JITOrErr);
+
+            auto Generator =
+                llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
+                    JIT->getDataLayout().getGlobalPrefix());
+
+            if (!Generator) {
+                return Generator.takeError();
+            }
+
+            JIT->getMainJITDylib().addGenerator(std::move(*Generator));
+
+            return std::make_unique<ZomlangJIT>(std::move(JIT));
         }
 
         const llvm::DataLayout& getDataLayout() const {
