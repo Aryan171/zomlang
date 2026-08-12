@@ -82,6 +82,8 @@ namespace zomlang {
                 return parseNumberExpr();
             case '(':
                 return parseParenExpr();
+            case tok_if:
+                return parseIfExpr();
         }
     }
 
@@ -108,6 +110,46 @@ namespace zomlang {
             
             LHS = std::make_unique<BinaryExprAST>(binOp, std::move(LHS), std::move(RHS));
         }
+    }
+
+    std::unique_ptr<ExprAST> Parser::parseIfExpr() {
+        lexer.getNextToken();
+
+        auto Cond = parseExpression();
+
+        if (!Cond) {
+            return nullptr;
+        }
+
+        if (lexer.curTok != tok_then) {
+            return LogError("expected then");
+        }
+
+        lexer.getNextToken();
+
+        auto Then = parseExpression();
+
+        if (!Then) {
+            return nullptr;
+        }
+
+        if (lexer.curTok != tok_else) {
+            return LogError("expected else");
+        }
+
+        lexer.getNextToken();
+
+        auto Else = parseExpression();
+
+        if (!Else) {
+            return nullptr;
+        }
+
+        return std::make_unique<IfExprAST>(
+            std::move(Cond),
+            std::move(Then),
+            std::move(Else)
+        );
     }
 
     std::unique_ptr<ExprAST> Parser::parseExpression() {

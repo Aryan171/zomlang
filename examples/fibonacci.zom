@@ -1,2 +1,10 @@
-extern fibonacci(x);
-fibonacci(10);
+def fib(x)
+    if x then
+        if x - 1 then
+            fib(x - 1) + fib(x - 2)
+        else
+            1
+    else
+        0;
+
+fib(10)

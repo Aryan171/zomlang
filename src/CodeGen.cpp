@@ -39,6 +39,61 @@ namespace zomlang {
         }
     }
 
+    llvm::Value *IfExprAST::codegen(CompilerState &cs) {
+        llvm::Value *CondV = Cond->codegen(cs);
+
+        if (!CondV) {
+            return nullptr;
+        }
+
+        CondV = cs.getBuilder().CreateFCmpONE(
+            CondV,
+            llvm::ConstantFP::get(cs.getContext(), llvm::APFloat(0.0)),
+            "ifcond"
+        );
+
+        llvm::Function *TheFunction = cs.getBuilder().GetInsertBlock()->getParent();
+
+        llvm::BasicBlock *ThenBB = llvm::BasicBlock::Create(cs.getContext(), "then", TheFunction);
+        llvm::BasicBlock *ElseBB = llvm::BasicBlock::Create(cs.getContext(), "else");
+        llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(cs.getContext(), "ifcont");
+
+        cs.getBuilder().CreateCondBr(CondV, ThenBB, ElseBB);
+
+        cs.getBuilder().SetInsertPoint(ThenBB);
+
+        llvm::Value *ThenV = Then->codegen(cs);
+        if (!ThenV) {
+            return nullptr;
+        }
+
+        cs.getBuilder().CreateBr(MergeBB);
+
+        ThenBB = cs.getBuilder().GetInsertBlock();
+
+        TheFunction->insert(TheFunction->end(), ElseBB);
+        cs.getBuilder().SetInsertPoint(ElseBB);
+
+        llvm::Value *ElseV = Else->codegen(cs);
+
+        if (!ElseV) {
+            return nullptr;
+        }
+
+        cs.getBuilder().CreateBr(MergeBB);
+
+        ElseBB = cs.getBuilder().GetInsertBlock();
+
+        TheFunction->insert(TheFunction->end(), MergeBB);
+        cs.getBuilder().SetInsertPoint(MergeBB);
+        llvm::PHINode *PN = cs.getBuilder().CreatePHI(llvm::Type::getDoubleTy(cs.getContext()), 2, "iftmp");
+
+        PN->addIncoming(ThenV, ThenBB);
+        PN->addIncoming(ElseV, ElseBB);
+
+        return PN;
+    }
+
     llvm::Value *CallExprAST::codegen(CompilerState& cs) {
          // Look up the name in the global module table.
         llvm::Function *CalleeF = cs.getFunction(callee);
