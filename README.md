@@ -35,6 +35,9 @@ def fib(x)
 fib(10)
 ```
 
+<img width="1917" height="1077" alt="image" src="https://github.com/user-attachments/assets/40b8a5a5-c559-481e-8bd4-b6b82c025d36" />
+
+
 ## 🛠️ Environment & Setup
 
 To ensure a smooth development process with LLVM dependencies, **I set up WSL (Windows Subsystem for Linux) to run and build LLVM**. 
